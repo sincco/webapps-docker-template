@@ -1,0 +1,125 @@
+#!/bin/bash
+
+init_main() {
+    echo -e "${BLUE}Que dominio vas a usar? ${GREEN}[localhost]${NC}"
+    read WEB_HOST
+    WEB_HOST=${WEB_HOST:-localhost}
+
+    echo -e "${BLUE}Como se llamará la BBDD? ${GREEN}[app_db]${NC}"
+    read DATABASE_NAME
+    DATABASE_NAME=${DATABASE_NAME:-app_db}
+
+    echo -e "${BLUE}Cual será su usuario? ${GREEN}[app]${NC}"
+    read DATABASE_USER
+    DATABASE_USER=${DATABASE_USER:-app}
+
+    echo -e "${BLUE}Cual será su password? ${GREEN}[appP4ssw0rd]${NC}"
+    read DATABASE_PASSWORD
+    DATABASE_PASSWORD=${DATABASE_PASSWORD:-appP4ssw0rd}
+
+    echo -e "${BLUE}Cual será el password del usuario ROOT? ${GREEN}[root]${NC}"
+    read DATABASE_ROOT_PASSWORD
+    DATABASE_ROOT_PASSWORD=${DATABASE_ROOT_PASSWORD:-root}
+
+    echo -e "${GREEN}Ahora crearemos los certificados, sigue las instrucciones${NC}"
+    sudo openssl req -x509 -nodes -days 1500 -newkey rsa:2048 -keyout .docker/certs/certificado.key -out .docker/certs/certificado.crt
+
+    sed -i '' -e "s/<WEB_HOST>/$WEB_HOST/g" .env;
+    sed -i '' -e "s/<WEB_HOST>/$WEB_HOST/g" .docker/hosts/default.conf;
+    sed -i '' -e "s/<DATABASE_NAME>/$DATABASE_NAME/g" .env;
+    sed -i '' -e "s/<DATABASE_USER>/$DATABASE_USER/g" .env;
+    sed -i '' -e "s/<DATABASE_PASSWORD>/$DATABASE_PASSWORD/g" .env;
+    sed -i '' -e "s/<DATABASE_ROOT_PASSWORD>/$DATABASE_ROOT_PASSWORD/g" .env;
+
+    start_main
+}
+
+kill_main() {
+    echo -e "${RED}=====================   Terminando   ===================${NC}"
+    docker-compose down
+    echo -e "${BLUE}===================== 😩 Adios!!! 😩 ===================${NC}"
+
+}
+
+restart_main() {
+    echo -e "==================== 🙏 Reiniciando 🙏 =================="
+    docker-compose restart
+    echo -e "================== 🚀 http://$WEB_HOST 🚀 ================"
+
+}
+
+run_main() {
+    echo -e "${BLUE}=====================   Ejecutando   ===================${NC}"
+    docker-compose exec --user www-data web php /var/www/html/$@
+    echo -e "${GREEN}===================== 🙋 Finalizado 🙋 ===================${NC}"
+}
+
+shell_main() {
+    docker-compose exec --user www-data web bash
+}
+
+start_main() {
+    echo -e "${BLUE}===================== 🙏 Iniciando 🙏 ===================${NC}"
+    docker-compose up -d
+    echo -e "${GREEN}================== 🚀 http://$WEB_HOST 🚀 ================${NC}"
+
+}
+
+stop_main() {
+    echo -e "${RED}=====================   Apagando   ===================${NC}"
+    docker-compose stop
+    echo -e "${BLUE}===================== 😩 Adios!!! 😩 ===================${NC}"
+
+}
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+PROJECTPATH=$(pwd)
+DOCKERBASE=$(basename $(pwd))
+WEBIMAGE="$(basename $(pwd))_web_1"
+if [ -f .env ]
+then
+  export $(cat .env | sed 's/#.*//g' | xargs)
+fi
+#echo "http://$WEB_HOST"
+case "$1" in
+    kill)
+    shift 1
+    kill_main  $*
+    ;;
+
+    init)
+    shift 1
+    init_main  $*
+    ;;
+
+    mysql)
+    shift 1
+    mysql_main $*
+    ;;
+
+    shell)
+    shift 1
+    shell_main $*
+    ;;
+
+    start)
+    start_main $*
+    ;;
+
+    restart)
+    restart_main $*
+    ;;
+
+    run)
+    shift 1
+    run_main $*
+    ;;
+
+    stop)
+    stop_main $*
+    ;;
+
+esac
