@@ -1,6 +1,16 @@
 #!/bin/bash
 
+composer_main() {
+    docker-compose exec --user www-data web composer $*
+}
+
+fix_main() {
+    sudo chown -R $USER ./src/
+}
+
 init_main() {
+    sudo chown -R $USER .docker
+
     echo -e "${BLUE}Que dominio vas a usar? ${GREEN}[localhost]${NC}"
     read WEB_HOST
     WEB_HOST=${WEB_HOST:-localhost}
@@ -31,7 +41,8 @@ init_main() {
     sed -i '' -e "s/<DATABASE_PASSWORD>/$DATABASE_PASSWORD/g" .env;
     sed -i '' -e "s/<DATABASE_ROOT_PASSWORD>/$DATABASE_ROOT_PASSWORD/g" .env;
 
-    start_main
+    docker-compose up
+    sudo chown -R $USER .docker
 }
 
 kill_main() {
@@ -85,6 +96,16 @@ then
 fi
 #echo "http://$WEB_HOST"
 case "$1" in
+    composer)
+    shift 1
+    composer_main  $*
+    ;;
+
+    fix)
+    shift 1
+    fix_main  $*
+    ;;
+
     kill)
     shift 1
     kill_main  $*
