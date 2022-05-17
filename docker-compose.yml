@@ -25,6 +25,13 @@ services:
       - ./.docker/dbdata:/var/lib/mysql
     networks:
       - net
+  phpmyadmin:
+    image: phpmyadmin
+    restart: always
+    ports:
+      - "${MYADMIN_POR}:80"
+    networks:
+      - net      
   elasticsearch:
     image: elasticsearch:${ES_VERSION}
     env_file: .env
